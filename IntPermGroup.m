@@ -5,6 +5,9 @@ classdef IntPermGroup < replab.Monoid
     properties (SetAccess = protected)
         order;
         generators;
+        stab_chain;
+        base;
+        transversal_set;
     end
     
     methods
@@ -18,79 +21,91 @@ classdef IntPermGroup < replab.Monoid
         function a = ithGen(obj, i)
             a = obj.generators(i, :);
         end
-       
-        %returns the orbit of point k (1<=k<=n)
-        function orb = orbit(obj, k)
+        
+        %intermediate function for orbit calculation
+        function [tr, orb] = orbit1(obj, k)
             gens = obj.generators;
-            n = obj.order;
-            l = [];
-            i = 1;
-            while (i <= length(gens(:, 1)))
-                tmp = find(gens(i, :) == k);
-                if (inlist(tmp, l) == 0)
-                    j = binins(tmp, l);
-                    len = length(l);
-                    if (j == 1)
-                        l = [tmp, l];
-                    else
-                        l = [l(1:j-1), tmp, l(j:len)];
-                    end
-                end
-                i = i + 1;
-            end
-            orb = l;
+            [tr, orb] = orbit(gens, k);
         end
+            
+        
+        %sifting algorithm
+           
     end
 end
       
-       %checks whether a point is in list, using binary search
-       function k = inlist(el, list)
-            left = 1;
-            right = length(list);
-            k = false; 
-            while (left <= right)
-                mid = ceil((right + left)/2);
-                
-                if (list(mid) == el)
-                    k = true;
-                    break;
-                else
-                    if (list(mid) > el)
-                        right = mid - 1;
-                    else
-                        left = mid + 1;
-                    end 
-                end
-            end
+       %inverse of a given permutation
+       function l2 = ginv(l1)
+       l2 = zeros(1, length(l1));
+       for i = 1:length(l1)
+           l2(i) = find(l1 == i);
+       end
        end
        
-       %returns the index where el, should be inserted in a sorted list
-       function ind = binins(el, list)
-       left = 1;
-       right = length(list);
-       mid = 0;
-       if (isempty(list))
-           ind = 1;
-       else 
-           while (left <= right)
-               mid = ceil((left + right)/2);
-               
-               if (list(mid) == el)
-                   ind = mid + 1;
-                   break;
-               else
-                   if (list(mid) > el)
-                       right = mid - 1;
-                       ind = mid;
-                   else
-                       left = mid + 1;
-                       ind = mid + 1;
-                   end
-               end
-           end
+       %product of two permutations
+       function prod = mult(p1, p2)
+       n = length(p1);
+       prod = zeros(1, n);
+       for i = 1:n
+           prod(i) = p1(p2(i));
        end
        end
-
+       
+       %function to calculate the orbit of a point
+       %under given generators and transversal set
+       %without use of Schreier trees
+       function [trans, orb] = orbit(gens, k)
+            l = [k];
+            n = length(gens(1, :)); %order
+            inlist = false(1, n); %is already in the list
+            comefrom = zeros(1, n);
+            us = zeros(n, n);
+            for i = 1:n
+                us(i,:) = 1:n;
+            end
+            while (~isempty(l))
+                top = l(1);
+                inlist(top) = true;
+                cl = length(l); %pop the top value
+                if (cl == 1)
+                    l = [];
+                else
+                    l = l(2:cl);
+                end
+                
+                for i = 1:length(gens(:, 1))
+                    tmp = find(gens(i, :) == top);
+                    if (~inlist(tmp))
+                        comefrom(tmp) = top;
+                        l = [tmp, l];
+                        us(tmp, :) = gens(i, :);
+                    end
+                end
+                
+            end
+            orb = [];
+            for i = 1:n
+                if (inlist(i))
+                    orb = [orb, i];
+                end
+            end
+            
+            trans = zeros(length(orb), n);
+            for i = 1:length(orb)
+                trans(i, :) = 1:n;
+            end
+            for i = 1:length(orb)
+                k = orb(i);
+                while (comefrom(k) ~= 0)
+                    tmp = mult(us(k, :), trans(i, :));
+                    trans(i, :) = tmp;
+                    k = comefrom(k);
+                end
+            end
+            
+       end
+       
+       
        
 
             
