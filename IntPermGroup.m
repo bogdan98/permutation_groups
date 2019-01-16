@@ -7,7 +7,8 @@ classdef IntPermGroup < replab.Monoid
         generators;
         stab_chain;
         base;
-        transversal_set;
+        transversal_system;
+        basic_orbits;
     end
     
     methods
@@ -30,7 +31,31 @@ classdef IntPermGroup < replab.Monoid
             
         
         %sifting algorithm
-           
+        function [siftee, index] = sift(obj, g)
+            h = g;
+            m = length(obj.base);
+            broken = false;
+            for i = 1:m
+                beta = find(h == obj.base(i));
+                if (~inlist(beta, obj.basic_orbits(i, :)))
+                    siftee = h;
+                    index = i - 1;
+                    broken = true;
+                    break;
+                end
+                u_next = zeros(1, obj.order);
+                for j = 1:m
+                    if (beta == find(obj.transversal_system(i, j, :) == obj.base(i)))
+                        u_next = obj.transversal_system(i, j, :);
+                    end
+                end
+                h = mult(h, ginv(u_next));
+            end
+            if (~broken)
+                siftee = h;
+                index = m;
+            end
+        end
     end
 end
       
@@ -105,6 +130,26 @@ end
             
        end
        
+       %checks whether a point is in list, using binary search
+       function k = inlist(el, list)
+            left = 1;
+            right = length(list);
+            k = false; 
+            while (left <= right)
+                mid = ceil((right + left)/2);
+                
+                if (list(mid) == el)
+                    k = true;
+                    break;
+                else
+                    if (list(mid) > el)
+                        right = mid - 1;
+                    else
+                        left = mid + 1;
+                    end 
+                end
+            end
+       end
        
        
 
