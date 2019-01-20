@@ -1,5 +1,5 @@
 %sifting algorithm
-        function [siftee, index] = sift(g, base, deltas, us, j)
+        function [siftee, index] = sift(g, base, deltas, us, j) %deltas - basic orbits, us - corresponding transversal sets
             h = g;
             m = length(base);
             broken = false;
